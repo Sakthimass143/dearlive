@@ -580,6 +580,22 @@
         return now >= slotDate;
     }
 
+    // NEW HELPER: Checks if current time is up to 1 hour early before the slot time
+    function isMachineTimeReached(slotTimeStr) {
+        const now = new Date();
+        const [time, modifier] = slotTimeStr.split(' ');
+        let [hours, minutes] = time.split(':');
+        hours = parseInt(hours);
+
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+
+        const slotDate = new Date();
+        slotDate.setHours(hours - 1, parseInt(minutes), 0, 0); // Shift backward 1 hour
+
+        return now >= slotDate;
+    }
+
     function loadTodayData() {
         const today = new Date().toISOString().slice(0, 10);
         const todayRef = ref(db, `lottery/${today}`);
@@ -598,27 +614,32 @@
                 const gridBox = document.getElementById(`grid-box-${cleanTime}`);
                 const guesEl = document.getElementById(`guess-${cleanTime}`);
 
-                // VALIDATION: 
-                // 1. Must have reached the time (isTimeReached)
-                // 2. Data must exist in Firebase (slotData)
-                // 3. Admin must have filled ALL fields (Result, Machine, Guessing)
-                const isDataReady = slotData && 
+                // Independent Machine Number Ready check
+                const isMachineReady = slotData && slotData.machine && slotData.machine.trim() !== "";
+
+                // Standard Full Data Ready check
+                const isRestDataReady = slotData && 
                                    slotData.result && slotData.result.trim() !== "" &&
                                    slotData.machine && slotData.machine.trim() !== "" &&
                                    slotData.guessing && slotData.guessing.trim() !== "";
 
-                if (isTimeReached(timeKey) && isDataReady) {
-                    if (resEl) resEl.textContent = slotData.result;
+                // 1. UPDATE MACHINE NUMBER (Triggers 1 Hour Early)
+                if (isMachineTimeReached(timeKey) && isMachineReady) {
                     if (macEl) macEl.textContent = slotData.machine;
+                } else {
+                    if (macEl) macEl.textContent = "---";
+                }
+
+                // 2. UPDATE RESULTS & GUESSINGS (Triggers at standard timeline)
+                if (isTimeReached(timeKey) && isRestDataReady) {
+                    if (resEl) resEl.textContent = slotData.result;
                     if (gridBox) gridBox.textContent = slotData.guessing;
                     if (guesEl) {
                         const val = slotData.guessing;
                         guesEl.textContent = (val.length >= 2) ? `${val[0]} r ${val[1]}` : val;
                     }
                 } else {
-                    // Show placeholders if time not reached OR admin hasn't finished typing
                     if (resEl) resEl.textContent = "---";
-                    if (macEl) macEl.textContent = "---";
                     if (gridBox) gridBox.textContent = "-";
                     if (guesEl) guesEl.textContent = "-";
                 }

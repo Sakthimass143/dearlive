@@ -287,7 +287,7 @@
         mSel.add(opt);
     });
 
-    // Helper: Validate if slot time has been reached for a specific date
+    /* ========= UPDATED TIME LOGIC (1 Hour Advance) ========= */
     function isTimeReached(dateKey, slotTimeStr) {
         const now = new Date();
         const [time, modifier] = slotTimeStr.split(' ');
@@ -300,7 +300,11 @@
         const slotDate = new Date(dateKey); 
         slotDate.setHours(hours, parseInt(minutes), 0, 0);
 
-        return now >= slotDate;
+        // Allow display if slot is in the past OR within the next 60 minutes
+        const diffMs = slotDate.getTime() - now.getTime();
+        const oneHourMs = 60 * 60 * 1000;
+
+        return diffMs <= oneHourMs;
     }
 
     window.toggleSidebar = function() {
@@ -355,17 +359,15 @@
             let row = `<tr><td class="date-col">${d}</td>`;
 
             times.forEach((time, i) => {
-                let displayValue = ""; // Default empty
+                let displayValue = "";
                 const slotData = (lotteryData[dateKey] && lotteryData[dateKey][time]) ? lotteryData[dateKey][time] : null;
 
-                // --- THE FIX: DUAL VALIDATION ---
-                // 1. Check if Admin has finished the update (Machine + Result + Guessing)
-                // 2. Check if the scheduled time has passed
                 const isReady = slotData && 
                                 slotData.machine && slotData.machine.trim() !== "" &&
                                 slotData.result && slotData.result.trim() !== "" &&
                                 slotData.guessing && slotData.guessing.trim() !== "";
 
+                // Uses the updated isTimeReached check
                 if (isReady && isTimeReached(dateKey, time)) {
                     displayValue = String(slotData.machine)
                         .replace(/\D/g, "")
@@ -404,7 +406,7 @@
             });
 
             const link = document.createElement('a');
-            link.download = `Dear-Machine-Chart-${monthNames[mSel.value - 1]}-${yearSelect.value}.png`;
+            link.download = `Dear-Machine-Chart-${monthNames[mSel.value - 1]}-${document.getElementById('yearSelect').value}.png`;
             link.href = dataUrl;
             link.click();
         } catch (e) {

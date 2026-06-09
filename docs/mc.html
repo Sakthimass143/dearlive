@@ -305,7 +305,7 @@ if(dateEl) dateEl.textContent = displayDate;
 if(dayEl) dayEl.textContent = now.toLocaleDateString('en-US',{weekday:'long'});
 
 /* =========================
-   SLOT LOGIC (TIME CHECK)
+   UPDATED SLOT LOGIC (1 Hour Advance)
 ========================= */
 
 function getSlotDateTime(slot){
@@ -315,16 +315,23 @@ function getSlotDateTime(slot){
   if(period==='PM' && hour!==12) hour+=12;
   if(period==='AM' && hour===12) hour=0;
 
-  return new Date(now.getFullYear(),now.getMonth(),now.getDate(),hour,minute,0);
+  return new Date(now.getFullYear(),now.getMonth(),now.getDate(),hour,minute,0).getTime();
 }
 
-// Logic: Find the most recent slot that has actually occurred
+// Logic: Find the most relevant slot (past or within the next 60 minutes)
 let selectedSlot = null;
-for(let i=timeSlots.length-1; i>=0; i--){
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+for(let i = 0; i < timeSlots.length; i++){
   const slotTime = getSlotDateTime(timeSlots[i]);
-  if(now >= slotTime){ // Strict: current time must be >= slot time
+  const diff = slotTime - now.getTime();
+
+  // If the slot is in the past, keep updating selectedSlot
+  // If the slot is in the future but within 60 mins, select it and stop
+  if (diff <= ONE_HOUR_MS) {
     selectedSlot = timeSlots[i];
-    break;
+  } else {
+    break; 
   }
 }
 
@@ -341,7 +348,7 @@ function setDigits(value='00000'){
 }
 
 /* =========================
-   FIREBASE LISTENER (STRICT VALIDATION)
+   FIREBASE LISTENER
 ========================= */
 
 let currentRef = null;
@@ -350,14 +357,11 @@ function attachMachineListener(slot){
   if(!slot) return;
   if(currentRef) off(currentRef);
 
-  // We listen to the whole slot object to check if Result and Guessing are also ready
   const path = `lottery/${todayKey}/${slot}`;
   currentRef = ref(db, path);
 
   onValue(currentRef, (snapshot) => {
     const slotData = snapshot.val();
-
-    // THE FIX: Check if time is reached (extra safety) AND admin filled all 3 fields
     const isReady = slotData && 
                     slotData.machine && slotData.machine.trim() !== "" &&
                     slotData.result && slotData.result.trim() !== "" &&
@@ -366,7 +370,6 @@ function attachMachineListener(slot){
     if (isReady) {
       setDigits(slotData.machine);
     } else {
-      // If admin hasn't finished updating everything, show zeros
       setDigits('00000');
     }
   });
