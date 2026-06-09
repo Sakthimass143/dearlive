@@ -169,7 +169,7 @@ if (dateInput) {
 // Initial Data Load
 render(true);
 
-// Logout
+// Logouts
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 
 // Clear View
