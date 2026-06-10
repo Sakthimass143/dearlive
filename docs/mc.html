@@ -305,7 +305,7 @@ if(dateEl) dateEl.textContent = displayDate;
 if(dayEl) dayEl.textContent = now.toLocaleDateString('en-US',{weekday:'long'});
 
 /* =========================
-   UPDATED SLOT LOGIC (1 Hour Advance)
+   UPDATED SLOT LOGIC
 ========================= */
 
 function getSlotDateTime(slot){
@@ -318,20 +318,17 @@ function getSlotDateTime(slot){
   return new Date(now.getFullYear(),now.getMonth(),now.getDate(),hour,minute,0).getTime();
 }
 
-// Logic: Find the most relevant slot (past or within the next 60 minutes)
 let selectedSlot = null;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
+// Logic: Check slots. Select the most recent one that is not more than 1 hour in the future.
 for(let i = 0; i < timeSlots.length; i++){
   const slotTime = getSlotDateTime(timeSlots[i]);
   const diff = slotTime - now.getTime();
 
-  // If the slot is in the past, keep updating selectedSlot
-  // If the slot is in the future but within 60 mins, select it and stop
+  // If the slot is in the past OR in the future but within 60 minutes
   if (diff <= ONE_HOUR_MS) {
     selectedSlot = timeSlots[i];
-  } else {
-    break; 
   }
 }
 
@@ -340,6 +337,7 @@ for(let i = 0; i < timeSlots.length; i++){
 ========================= */
 
 function setDigits(value='00000'){
+  // Ensure we are working with a string, remove non-digits, pad/slice to 5
   const clean = String(value).replace(/\D/g,'').padStart(5,'0').slice(0,5);
   for(let i=0; i<5; i++){
     const el = document.getElementById(`digit-${i+1}`);
@@ -362,12 +360,12 @@ function attachMachineListener(slot){
 
   onValue(currentRef, (snapshot) => {
     const slotData = snapshot.val();
-    const isReady = slotData && 
-                    slotData.machine && slotData.machine.trim() !== "" &&
-                    slotData.result && slotData.result.trim() !== "" &&
-                    slotData.guessing && slotData.guessing.trim() !== "";
+    
+    // FIX: Only check if machine data exists. 
+    // We don't require result or guessing for the machine to show.
+    const hasMachine = slotData && slotData.machine && slotData.machine.trim() !== "";
 
-    if (isReady) {
+    if (hasMachine) {
       setDigits(slotData.machine);
     } else {
       setDigits('00000');
@@ -387,15 +385,10 @@ if(selectedSlot){
   setDigits('00000');
 }
 
-/* =========================
-   DOWNLOAD IMAGE
-========================= */
-
 window.downloadImage = async function(){
   const container = document.getElementById('image-container');
   if(!container) return;
   const canvas = await html2canvas(container,{scale:2,useCORS:true});
-
   const link = document.createElement('a');
   link.download = `mc-${todayKey}.png`;
   link.href = canvas.toDataURL('image/png');
