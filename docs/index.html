@@ -550,7 +550,7 @@
         </div>
     </div>
 
-<script type="module">
+<<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -564,35 +564,27 @@
         return timeString.replace(":00 ", "");
     }
 
-    // HELPER: Checks if the current time has reached the slot time
     function isTimeReached(slotTimeStr) {
         const now = new Date();
         const [time, modifier] = slotTimeStr.split(' ');
         let [hours, minutes] = time.split(':');
         hours = parseInt(hours);
-
         if (modifier === 'PM' && hours < 12) hours += 12;
         if (modifier === 'AM' && hours === 12) hours = 0;
-
         const slotDate = new Date();
         slotDate.setHours(hours, parseInt(minutes), 0, 0);
-
         return now >= slotDate;
     }
 
-    // NEW HELPER: Checks if current time is up to 1 hour early before the slot time
     function isMachineTimeReached(slotTimeStr) {
         const now = new Date();
         const [time, modifier] = slotTimeStr.split(' ');
         let [hours, minutes] = time.split(':');
         hours = parseInt(hours);
-
         if (modifier === 'PM' && hours < 12) hours += 12;
         if (modifier === 'AM' && hours === 12) hours = 0;
-
         const slotDate = new Date();
-        slotDate.setHours(hours - 1, parseInt(minutes), 0, 0); // Shift backward 1 hour
-
+        slotDate.setHours(hours - 1, parseInt(minutes), 0, 0);
         return now >= slotDate;
     }
 
@@ -608,40 +600,43 @@
                 const slotData = data[timeKey];
                 const cleanTime = formatTimeForId(timeKey);
                 
-                // Get elements
                 const resEl = document.getElementById(`result-${cleanTime}`);
                 const macEl = document.getElementById(`machine-${cleanTime}`);
                 const gridBox = document.getElementById(`grid-box-${cleanTime}`);
                 const guesEl = document.getElementById(`guess-${cleanTime}`);
 
-                // Independent Machine Number Ready check
+                // Check if machine is uploaded
                 const isMachineReady = slotData && slotData.machine && slotData.machine.trim() !== "";
+                // Check if full data is available
+                const isFullDataReady = slotData && slotData.result && slotData.machine && slotData.guessing;
 
-                // Standard Full Data Ready check
-                const isRestDataReady = slotData && 
-                                   slotData.result && slotData.result.trim() !== "" &&
-                                   slotData.machine && slotData.machine.trim() !== "" &&
-                                   slotData.guessing && slotData.guessing.trim() !== "";
-
-                // 1. UPDATE MACHINE NUMBER (Triggers 1 Hour Early)
+                // 1. MACHINE NUMBER: Shows 1 hour before
                 if (isMachineTimeReached(timeKey) && isMachineReady) {
                     if (macEl) macEl.textContent = slotData.machine;
                 } else {
                     if (macEl) macEl.textContent = "---";
                 }
 
-                // 2. UPDATE RESULTS & GUESSINGS (Triggers at standard timeline)
-                if (isTimeReached(timeKey) && isRestDataReady) {
-                    if (resEl) resEl.textContent = slotData.result;
+                // 2. GUESSING BOXES (Grid): Show IMMEDIATELY when Machine is uploaded
+                if (isMachineReady) {
                     if (gridBox) gridBox.textContent = slotData.guessing;
-                    if (guesEl) {
+                } else {
+                    if (gridBox) gridBox.textContent = "-";
+                }
+
+                // 3. RESULTS & BOTTOM GUESS CARDS: Show at standard time
+                if (isTimeReached(timeKey) && isFullDataReady) {
+                    if (resEl) resEl.textContent = slotData.result;
+                    // Only update the 3 special bottom cards if within 1 hour rule
+                    if (guesEl && (cleanTime === "01PM" || cleanTime === "06PM" || cleanTime === "08PM")) {
                         const val = slotData.guessing;
                         guesEl.textContent = (val.length >= 2) ? `${val[0]} r ${val[1]}` : val;
                     }
                 } else {
                     if (resEl) resEl.textContent = "---";
-                    if (gridBox) gridBox.textContent = "-";
-                    if (guesEl) guesEl.textContent = "-";
+                    if (guesEl && (cleanTime === "01PM" || cleanTime === "06PM" || cleanTime === "08PM")) {
+                        guesEl.textContent = "- r -";
+                    }
                 }
             });
         });
@@ -671,8 +666,6 @@
 
     setCurrentDate();
     loadTodayData();
-    
-    // Auto-refresh every minute to check if the next time slot has opened
     setInterval(loadTodayData, 60000); 
 </script>
 </body>
