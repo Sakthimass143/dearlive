@@ -279,7 +279,6 @@
     const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
     const times = ["10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM"];
 
-    // Initialize Month Select
     const mSel = document.getElementById('monthSelect');
     monthNames.forEach((m, i) => {
         let opt = new Option(m, i + 1);
@@ -312,10 +311,8 @@
     }
 
     window.applyAutoScale = function() {
-        const inner = document.getElementById('tableInner');
         const outer = document.getElementById('tableOuter');
         const captureArea = document.getElementById('captureArea');
-
         const availableWidth = window.innerWidth * 0.98;
         const actualWidth = captureArea.offsetWidth + 20;
         let scale = Math.min(1, availableWidth / actualWidth);
@@ -362,13 +359,10 @@
                 let displayValue = "";
                 const slotData = (lotteryData[dateKey] && lotteryData[dateKey][time]) ? lotteryData[dateKey][time] : null;
 
-                const isReady = slotData && 
-                                slotData.machine && slotData.machine.trim() !== "" &&
-                                slotData.result && slotData.result.trim() !== "" &&
-                                slotData.guessing && slotData.guessing.trim() !== "";
+                // FIX: Check only for machine existence, ignoring result/guessing for chart display
+                const hasMachine = slotData && slotData.machine && slotData.machine.trim() !== "";
 
-                // Uses the updated isTimeReached check
-                if (isReady && isTimeReached(dateKey, time)) {
+                if (hasMachine && isTimeReached(dateKey, time)) {
                     displayValue = String(slotData.machine)
                         .replace(/\D/g, "")
                         .padStart(5, "0")
