@@ -224,6 +224,35 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(241, 23, 23, 0.3);
         }
+                    /* 01 PM */
+            .time-01pm {
+                color: #ff6600 !important;
+                background: #ffc04b54 !important;
+            }
+
+            .time-01pm .res-sub {
+                color: #ff6600 !important;
+            }
+
+            /* 06 PM */
+            .time-06pm {
+                color: #008000 !important;
+                background: #ffc04b54  !important;
+            }
+
+            .time-06pm .res-sub {
+                color: #008000 !important;
+            }
+
+            /* 08 PM */
+            .time-08pm {
+                color: #0000ff !important;
+                background: #ffc04b54  !important;
+            }
+
+            .time-08pm .res-sub {
+                color: #0000ff !important;
+            }
     </style>
 </head>
 
@@ -385,7 +414,17 @@
                         threeDigit = slotData.three_digit || "---";
                     }
 
-                    row += `<td>${machine}<span class="res-sub">${threeDigit}</span></td>`;
+                    let timeClass = "";
+
+                if (timeKey === "01:00 PM") {
+                    timeClass = "time-01pm";
+                } else if (timeKey === "06:00 PM") {
+                    timeClass = "time-06pm";
+                } else if (timeKey === "08:00 PM") {
+                    timeClass = "time-08pm";
+                }
+
+row += `<td class="${timeClass}">${machine}<span class="res-sub">${threeDigit}</span></td>`;
                 }
 
                 row += `<td class="day-col">${d}</td></tr>`;
