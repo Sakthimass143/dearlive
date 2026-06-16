@@ -298,27 +298,58 @@
            UPDATE KERALA (KL) SPECIFIC DATA
            ========================================= */
         if (data['Daily']) {
-            const kl = data['Daily'];
-            // Updated: Lock to 2:30 PM (14:30)
-            const isKLTime = isTimeReached(null, 14, 30); 
 
-            // Ensure results exist and time has passed
-            const isReady = kl.kl_result && kl.kl_result.trim() !== "" && 
-                            kl.kl_machine && kl.kl_machine.trim() !== "" &&
-                            isKLTime;
+    const kl = data['Daily'];
 
-            if (isReady) {
-                if (kl.kl_guessing && kl.kl_guessing.length >= 2) {
-                    document.getElementById('guess-kl-2d').innerText = `${kl.kl_guessing.charAt(0)} r ${kl.kl_guessing.charAt(1)}`;
-                }
-                document.getElementById('machine-box').innerText = kl.kl_machine;
-                document.getElementById('kl-result-box').innerText = kl.kl_result;
-            } else {
-                document.getElementById('guess-kl-2d').innerText = "-- r --";
-                document.getElementById('machine-box').innerText = "---";
-                document.getElementById('kl-result-box').innerText = "---";
-            }
+    const isKLTime = isTimeReached(null, 14, 30);
+
+    const isReady =
+        kl.kl_result &&
+        kl.kl_result.trim() !== "" &&
+        kl.kl_machine &&
+        kl.kl_machine.trim() !== "" &&
+        isKLTime;
+
+    // MACHINE NUMBER (independent)
+    if (
+        isKLTime &&
+        kl.kl_machine &&
+        kl.kl_machine.trim() !== ""
+    ) {
+
+        document.getElementById('machine-box').innerText =
+            kl.kl_machine;
+
+    } else {
+
+        document.getElementById('machine-box').innerText =
+            "---";
+    }
+
+    // RESULT + GUESSING
+    if (isReady) {
+
+        if (
+            kl.kl_guessing &&
+            kl.kl_guessing.length >= 2
+        ) {
+
+            document.getElementById('guess-kl-2d').innerText =
+                `${kl.kl_guessing.charAt(0)} r ${kl.kl_guessing.charAt(1)}`;
         }
+
+        document.getElementById('kl-result-box').innerText =
+            kl.kl_result;
+
+    } else {
+
+        document.getElementById('guess-kl-2d').innerText =
+            "-- r --";
+
+        document.getElementById('kl-result-box').innerText =
+            "---";
+    }
+}
     });
 </script>
 </body>
