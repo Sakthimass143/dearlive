@@ -190,70 +190,151 @@
     const tableBody = document.getElementById('tableBody');
     const tableYearHeader = document.getElementById('tableYearHeader');
 
-    // HELPER: Updated to check for 2:30 PM (14:30)
-    function isTimeReached(selectedYear, monthIdx, day) {
+    // MACHINE TIME = 2:30 PM
+    function isMachineTimeReached(selectedYear, monthIdx, day) {
         const now = new Date();
-        // 14:30:00 = 2:30 PM
-        const slotTime = new Date(selectedYear, monthIdx, day, 14, 30, 0); 
+        const slotTime = new Date(selectedYear, monthIdx, day, 14, 30, 0);
+        return now >= slotTime;
+    }
+
+    // RESULT TIME = 3:00 PM
+    function isResultTimeReached(selectedYear, monthIdx, day) {
+        const now = new Date();
+        const slotTime = new Date(selectedYear, monthIdx, day, 15, 0, 0);
         return now >= slotTime;
     }
 
     function updateChart() {
+
         const selectedYear = yearSelect.value;
-        if(tableYearHeader) tableYearHeader.innerText = `Kerala Yearly Result Chart (${selectedYear})`;
-        
+
+        if (tableYearHeader) {
+            tableYearHeader.innerText =
+                `Kerala Yearly Result Chart (${selectedYear})`;
+        }
+
         const lotteryRef = ref(db, 'lottery');
 
         onValue(lotteryRef, (snapshot) => {
+
             const allData = snapshot.val() || {};
+
             let html = '';
-            const monthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-            
+
+            const monthKeys = [
+                "01",
+                "02",
+                "03",
+                "04",
+                "05",
+                "06",
+                "07",
+                "08",
+                "09",
+                "10",
+                "11",
+                "12"
+            ];
+
             for (let d = 1; d <= 31; d++) {
+
                 const dayStr = String(d).padStart(2, '0');
+
                 html += `<tr><td class="date-col-left">${d}</td>`;
 
                 for (let m = 0; m < 12; m++) {
+
                     const monthStr = monthKeys[m];
-                    const dateKey = `${selectedYear}-${monthStr}-${dayStr}`;
-                    const dateObj = new Date(selectedYear, m, d);
-                    const isValidDate = dateObj.getFullYear() == selectedYear && dateObj.getMonth() == m && dateObj.getDate() == d;
+
+                    const dateKey =
+                        `${selectedYear}-${monthStr}-${dayStr}`;
+
+                    const dateObj =
+                        new Date(selectedYear, m, d);
+
+                    const isValidDate =
+                        dateObj.getFullYear() == selectedYear &&
+                        dateObj.getMonth() == m &&
+                        dateObj.getDate() == d;
 
                     if (!isValidDate) {
-                        html += `<td class="stars">***</td><td class="col-right stars">***</td>`;
+
+                        html +=
+                            `<td class="stars">***</td><td class="col-right stars">***</td>`;
+
                     } else {
+
                         let machineVal = "---";
                         let resultVal = "---";
 
-                        // Data path: lottery/YYYY-MM-DD/Daily
-                        const daily = (allData[dateKey] && allData[dateKey]['Daily']) ? allData[dateKey]['Daily'] : null;
-                        
-                        // Ready Check: Data exists, fields are not empty, and time is >= 2:30 PM
-                        const isReady = daily && 
-                                        daily.kl_machine && daily.kl_machine.trim() !== "" &&
-                                        daily.kl_result && daily.kl_result.trim() !== "" &&
-                                        isTimeReached(selectedYear, m, d);
+                        const daily =
+                            (
+                                allData[dateKey] &&
+                                allData[dateKey]['Daily']
+                            )
+                                ? allData[dateKey]['Daily']
+                                : null;
 
-                        if (isReady) {
+                        const machineReady =
+                            daily &&
+                            daily.kl_machine &&
+                            daily.kl_machine.trim() !== "" &&
+                            isMachineTimeReached(
+                                selectedYear,
+                                m,
+                                d
+                            );
+
+                        const resultReady =
+                            daily &&
+                            daily.kl_result &&
+                            daily.kl_result.trim() !== "" &&
+                            isResultTimeReached(
+                                selectedYear,
+                                m,
+                                d
+                            );
+
+                        if (machineReady) {
                             machineVal = daily.kl_machine;
+                        }
+
+                        if (resultReady) {
                             resultVal = daily.kl_result;
                         }
 
-                        let cls = (d % 5 === 0) ? 'highlight-red' : '';
-                        html += `<td class="${cls}">${machineVal}</td><td class="col-right ${cls}">${resultVal}</td>`;
+                        let cls =
+                            (d % 5 === 0)
+                                ? 'highlight-red'
+                                : '';
+
+                        html +=
+                            `<td class="${cls}">${machineVal}</td>
+                             <td class="col-right ${cls}">${resultVal}</td>`;
                     }
                 }
-                html += `<td class="date-col-right">${d}</td></tr>`;
+
+                html +=
+                    `<td class="date-col-right">${d}</td></tr>`;
             }
+
             tableBody.innerHTML = html;
+
             applyAutoScale();
+
         });
     }
 
-    yearSelect.addEventListener('change', updateChart);
-    window.addEventListener('load', updateChart);
-</script>
+    yearSelect.addEventListener(
+        'change',
+        updateChart
+    );
 
+    window.addEventListener(
+        'load',
+        updateChart
+    );
+</script>
 <script>
     // These functions handle the UI scaling and the image download
     function applyAutoScale() {
