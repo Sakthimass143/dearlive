@@ -252,8 +252,8 @@
     /**
      * Helper: Check if slot time has passed
      * @param {string} slotLabel - e.g., "11:00 AM"
-     * @param {number|null} customHour - 24h format (e.g., 14 for 2 PM)
-     * @param {number} customMinutes - minutes (e.g., 30)
+     * @param {number|null} customHour - 24h format
+     * @param {number} customMinutes - minutes
      */
     function isTimeReached(slotLabel, customHour = null, customMinutes = 0) {
         const now = new Date();
@@ -264,92 +264,127 @@
             minutes = customMinutes;
         } else {
             const m = /(\d{1,2}):(\d{2})\s*([AP]M)/i.exec(slotLabel);
-            if (!m) return true; 
-            hours = (parseInt(m[1]) % 12) + (m[3].toUpperCase() === 'PM' ? 12 : 0);
+
+            if (!m) return true;
+
+            hours =
+                (parseInt(m[1]) % 12) +
+                (m[3].toUpperCase() === 'PM' ? 12 : 0);
+
             minutes = parseInt(m[2]);
         }
 
         const slotDate = new Date();
         slotDate.setHours(hours, minutes, 0, 0);
+
         return now >= slotDate;
     }
 
     const today = getTodayDate();
+
     const lotteryRef = ref(db, `lottery/${today}`);
 
     onValue(lotteryRef, (snapshot) => {
+
         const data = snapshot.val();
+
         if (!data) return;
 
         /* =========================================
            UPDATE JACKPOT BOXES (By Time Slot)
            ========================================= */
         document.querySelectorAll('.digit-box').forEach(box => {
+
             const timeKey = box.getAttribute('data-time');
-            
-            if (data[timeKey] && data[timeKey].jackpot && isTimeReached(timeKey)) {
+
+            if (
+                data[timeKey] &&
+                data[timeKey].jackpot &&
+                isTimeReached(timeKey)
+            ) {
+
                 box.innerText = data[timeKey].jackpot;
+
             } else {
+
                 box.innerText = "---";
+
             }
+
         });
 
         /* =========================================
            UPDATE KERALA (KL) SPECIFIC DATA
            ========================================= */
+
         if (data['Daily']) {
 
-    const kl = data['Daily'];
+            const kl = data['Daily'];
 
-    const isKLTime = isTimeReached(null, 14, 30);
+            // Machine + Guessing at 2:30 PM
+            const isKLMachineTime = isTimeReached(null, 14, 30);
 
-    const isReady =
-        kl.kl_result &&
-        kl.kl_result.trim() !== "" &&
-        kl.kl_machine &&
-        kl.kl_machine.trim() !== "" &&
-        isKLTime;
+            // Result at 3:00 PM
+            const isKLResultTime = isTimeReached(null, 15, 0);
 
-    // MACHINE NUMBER (independent)
-    if (
-        isKLTime &&
-        kl.kl_machine &&
-        kl.kl_machine.trim() !== ""
-    ) {
+            /* --------------------------
+               MACHINE NUMBER
+            -------------------------- */
+            if (
+                isKLMachineTime &&
+                kl.kl_machine &&
+                kl.kl_machine.trim() !== ""
+            ) {
 
-        document.getElementById('machine-box').innerText =
-            kl.kl_machine;
+                document.getElementById('machine-box').innerText =
+                    kl.kl_machine;
 
-    } else {
+            } else {
 
-        document.getElementById('machine-box').innerText =
-            "---";
-    }
+                document.getElementById('machine-box').innerText =
+                    "---";
 
-    // RESULT + GUESSING
-    if (isReady) {
+            }
 
-        if (
-            kl.kl_guessing &&
-            kl.kl_guessing.length >= 2
-        ) {
+            /* --------------------------
+               GUESSING
+            -------------------------- */
+            if (
+                isKLMachineTime &&
+                kl.kl_guessing &&
+                kl.kl_guessing.length >= 2
+            ) {
 
-            document.getElementById('guess-kl-2d').innerText =
-                `${kl.kl_guessing.charAt(0)} r ${kl.kl_guessing.charAt(1)}`;
+                document.getElementById('guess-kl-2d').innerText =
+                    `${kl.kl_guessing.charAt(0)} r ${kl.kl_guessing.charAt(1)}`;
+
+            } else {
+
+                document.getElementById('guess-kl-2d').innerText =
+                    "-- r --";
+
+            }
+
+            /* --------------------------
+               RESULT
+            -------------------------- */
+            if (
+                isKLResultTime &&
+                kl.kl_result &&
+                kl.kl_result.trim() !== ""
+            ) {
+
+                document.getElementById('kl-result-box').innerText =
+                    kl.kl_result;
+
+            } else {
+
+                document.getElementById('kl-result-box').innerText =
+                    "---";
+
+            }
+
         }
-
-        document.getElementById('kl-result-box').innerText =
-            kl.kl_result;
-
-    } else {
-
-        document.getElementById('guess-kl-2d').innerText =
-            "-- r --";
-
-        document.getElementById('kl-result-box').innerText =
-            "---";
-    }
-}
 
     });
 </script>
